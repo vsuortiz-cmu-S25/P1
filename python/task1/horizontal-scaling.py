@@ -6,6 +6,7 @@ import time
 import json
 import configparser
 import re
+from datetime import datetime
 from dateutil.parser import parse
 
 
@@ -101,8 +102,9 @@ def initialize_test(lg_dns, first_web_service_dns):
             time.sleep(1)
             pass 
 
-    # TODO: return log File name
-    return ""
+    # Extract test log name from response
+    log_name = get_test_id(response)
+    return log_name
 
 
 def print_section(msg):
@@ -336,14 +338,38 @@ def main():
     print_section('3. Submit the first WS instance DNS to LG, starting test.')
     log_name = initialize_test(lg_dns, web_service_dns)
     last_launch_time = get_test_start_time(lg_dns, log_name)
+    
+    # Track all instances for cleanup
+    all_instances = [lg, ws]
+    
     while not is_test_complete(lg_dns, log_name):
-        # TODO: Check RPS and last launch time
-        # TODO: Add New Web Service Instance if Required
+        # Get current RPS
+        current_rps = get_rps(lg_dns, log_name)
+        current_time = time.time()
+        
+        # Check if we need to add more instances
+        if current_rps < 50:
+            # Check if cooldown period has passed (100 seconds)
+            time_since_last_launch = current_time - last_launch_time.timestamp()
+            if time_since_last_launch >= 100:
+                print(f"Current RPS: {current_rps:.2f} < 50. Adding new WS instance...")
+                new_ws = create_instance(WEB_SERVICE_AMI, sg2_id)
+                all_instances.append(new_ws)
+                add_web_service_instance(lg_dns, sg2_id, log_name)
+                last_launch_time = datetime.now()
+                print(f"New WS added. Total instances: {len(all_instances) - 1} WS + 1 LG")
+        
         time.sleep(1)
 
     print_section('End Test')
 
-    # TODO: Terminate Resources
+    # Terminate all instances
+    print("Terminating all instances...")
+    ec2 = boto3.resource('ec2', region_name='us-east-1')
+    for instance in all_instances:
+        instance.terminate()
+        print(f"Terminated instance: {instance.instance_id}")
+    print("All instances terminated.")
 
 
 if __name__ == '__main__':
