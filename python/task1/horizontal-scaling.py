@@ -154,6 +154,7 @@ def add_web_service_instance(lg_dns, sg2_id, log_name):
     :param lg_dns: load generator DNS
     :param sg2_id: id of WS security group
     :param log_name: name of the log file
+    :return: the created instance object
     """
     ins = create_instance(WEB_SERVICE_AMI, sg2_id)
     print("New WS launched. id={}, dns={}".format(
@@ -171,6 +172,7 @@ def add_web_service_instance(lg_dns, sg2_id, log_name):
         elif is_test_complete(lg_dns, log_name):
             print("New WS not submitted because test already completed.")
             break
+    return ins
 
 
 def get_rps(lg_dns, log_name):
@@ -284,41 +286,53 @@ def main():
     web_service_dns = ws.public_dns_name
     print("First Web Service running: id={} dns={}".format(ws.instance_id, web_service_dns))
 
-    print_section('3. Submit the first WS instance DNS to LG, starting test.')
-    log_name = initialize_test(lg_dns, web_service_dns)
-    last_launch_time = get_test_start_time(lg_dns, log_name)
-    
     # Track all instances for cleanup
     all_instances = [lg, ws]
     
-    while not is_test_complete(lg_dns, log_name):
-        # Get current RPS
-        current_rps = get_rps(lg_dns, log_name)
-        current_time = time.time()
+    try:
+        print_section('3. Submit the first WS instance DNS to LG, starting test.')
+        log_name = initialize_test(lg_dns, web_service_dns)
+        last_launch_time = get_test_start_time(lg_dns, log_name)
         
-        # Check if we need to add more instances
-        if current_rps < 50:
-            # Check if cooldown period has passed (100 seconds)
-            time_since_last_launch = current_time - last_launch_time.timestamp()
-            if time_since_last_launch >= 100:
-                print(f"Current RPS: {current_rps:.2f} < 50. Adding new WS instance...")
-                new_ws = create_instance(WEB_SERVICE_AMI, sg2_id)
-                all_instances.append(new_ws)
-                add_web_service_instance(lg_dns, sg2_id, log_name)
-                last_launch_time = datetime.now()
-                print(f"New WS added. Total instances: {len(all_instances) - 1} WS + 1 LG")
+        while not is_test_complete(lg_dns, log_name):
+            # Get current RPS
+            current_rps = get_rps(lg_dns, log_name)
+            current_time = time.time()
+            
+            # Check if we need to add more instances
+            if current_rps < 50:
+                # Check if cooldown period has passed (100 seconds)
+                time_since_last_launch = current_time - last_launch_time.timestamp()
+                if time_since_last_launch >= 100:
+                    try:
+                        print(f"Current RPS: {current_rps:.2f} < 50. Adding new WS instance...")
+                        # FIXED: Don't create instance twice - add_web_service_instance creates it
+                        new_ws = add_web_service_instance(lg_dns, sg2_id, log_name)
+                        all_instances.append(new_ws)
+                        last_launch_time = datetime.now()
+                        print(f"New WS added. Total instances: {len(all_instances) - 1} WS + 1 LG")
+                    except botocore.exceptions.ClientError as e:
+                        if 'VcpuLimitExceeded' in str(e):
+                            print(f"WARNING: vCPU limit reached. Cannot add more instances.")
+                            print(f"Continuing with current instances. RPS: {current_rps:.2f}")
+                        else:
+                            raise
+            
+            time.sleep(1)
+
+        print_section('End Test')
         
-        time.sleep(1)
-
-    print_section('End Test')
-
-    # Terminate all instances
-    print("Terminating all instances...")
-    ec2 = boto3.resource('ec2', region_name='us-east-1')
-    for instance in all_instances:
-        instance.terminate()
-        print(f"Terminated instance: {instance.instance_id}")
-    print("All instances terminated.")
+    finally:
+        # Always terminate all instances, even if there was an error
+        print("Terminating all instances...")
+        ec2 = boto3.resource('ec2', region_name='us-east-1')
+        for instance in all_instances:
+            try:
+                instance.terminate()
+                print(f"Terminated instance: {instance.instance_id}")
+            except Exception as e:
+                print(f"Error terminating {instance.instance_id}: {e}")
+        print("All instances terminated.")
 
 
 if __name__ == '__main__':
