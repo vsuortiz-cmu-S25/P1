@@ -41,12 +41,44 @@ def create_instance(ami, sg_id):
     :param sg_id: ID of the security group to be attached to instance
     :return: instance object
     """
-    instance = None
-
-    # TODO: Create an EC2 instance
-    # Wait for the instance to enter the running state
-    # Reload the instance attributes
-
+    ec2 = boto3.resource('ec2', region_name='us-east-1')
+    
+    # Get default subnet for availability zone
+    ec2_client = boto3.client('ec2', region_name='us-east-1')
+    subnets = ec2_client.describe_subnets(
+        Filters=[{'Name': 'default-for-az', 'Values': ['true']}]
+    )
+    subnet_id = subnets['Subnets'][0]['SubnetId']
+    
+    # Launch instance
+    instances = ec2.create_instances(
+        ImageId=ami,
+        InstanceType=INSTANCE_TYPE,
+        SecurityGroupIds=[sg_id],
+        SubnetId=subnet_id,
+        MaxCount=1,
+        MinCount=1,
+        TagSpecifications=[
+            {
+                'ResourceType': 'instance',
+                'Tags': TAGS
+            },
+            {
+                'ResourceType': 'volume',
+                'Tags': TAGS
+            },
+            {
+                'ResourceType': 'network-interface',
+                'Tags': TAGS
+            }
+        ]
+    )
+    instance = instances[0]
+    
+    # Wait for instance to be running
+    instance.wait_until_running()
+    instance.reload()
+    
     return instance
 
 
@@ -288,14 +320,18 @@ def main():
 
     print_section('2 - create LG')
 
-    # TODO: Create Load Generator instance and obtain ID and DNS
-    lg = ''
-    lg_id = ''
-    lg_dns = ''
+    # Create Load Generator instance
+    lg = create_instance(LOAD_GENERATOR_AMI, sg1_id)
+    lg_id = lg.instance_id
+    lg_dns = lg.public_dns_name
     print("Load Generator running: id={} dns={}".format(lg_id, lg_dns))
 
-    # TODO: Create First Web Service Instance and obtain the DNS
-    web_service_dns = ''
+    print_section('3 - create first WS')
+    
+    # Create First Web Service Instance
+    ws = create_instance(WEB_SERVICE_AMI, sg2_id)
+    web_service_dns = ws.public_dns_name
+    print("First Web Service running: id={} dns={}".format(ws.instance_id, web_service_dns))
 
     print_section('3. Submit the first WS instance DNS to LG, starting test.')
     log_name = initialize_test(lg_dns, web_service_dns)
