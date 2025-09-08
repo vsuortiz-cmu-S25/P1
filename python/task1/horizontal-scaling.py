@@ -225,100 +225,49 @@ def main():
     #   - Terminate resources
 
     print_section('1 - create two security groups')
-    sg_permissions = [
-        {'IpProtocol': 'tcp',
-         'FromPort': 80,
-         'ToPort': 80,
-         'IpRanges': [{'CidrIp': '0.0.0.0/0'}],
-         'Ipv6Ranges': [{'CidrIpv6': '::/0'}],
-         }
-    ]
-
+    
     # Create EC2 client
     ec2_client = boto3.client('ec2', region_name='us-east-1')
     
     # Get the default VPC
     vpcs = ec2_client.describe_vpcs(Filters=[{'Name': 'is-default', 'Values': ['true']}])
     vpc_id = vpcs['Vpcs'][0]['VpcId']
-    print(f"Using default VPC: {vpc_id}")
     
-    # Create security group for Load Generator
-    lg_sg_name = 'LGSecGroup'
-    try:
-        # Try to create the security group
-        lg_sg_response = ec2_client.create_security_group(
-            GroupName=lg_sg_name,
-            Description='Security group for Load Generator instances',
-            VpcId=vpc_id,
-            TagSpecifications=[
-                {
-                    'ResourceType': 'security-group',
-                    'Tags': TAGS
-                }
-            ]
-        )
-        sg1_id = lg_sg_response['GroupId']
-        print(f"Created Load Generator security group: {sg1_id}")
-        
-        # Add ingress rules for Load Generator security group
-        ec2_client.authorize_security_group_ingress(
-            GroupId=sg1_id,
-            IpPermissions=sg_permissions
-        )
-        print(f"Added HTTP ingress rule to Load Generator security group")
-        
-    except botocore.exceptions.ClientError as e:
-        if e.response['Error']['Code'] == 'InvalidGroup.Duplicate':
-            # Security group already exists, get its ID
-            sgs = ec2_client.describe_security_groups(
-                Filters=[
-                    {'Name': 'group-name', 'Values': [lg_sg_name]},
-                    {'Name': 'vpc-id', 'Values': [vpc_id]}
-                ]
+    # Create or get security groups
+    def create_security_group(name, description):
+        try:
+            response = ec2_client.create_security_group(
+                GroupName=name,
+                Description=description,
+                VpcId=vpc_id,
+                TagSpecifications=[{'ResourceType': 'security-group', 'Tags': TAGS}]
             )
-            sg1_id = sgs['SecurityGroups'][0]['GroupId']
-            print(f"Using existing Load Generator security group: {sg1_id}")
-        else:
+            sg_id = response['GroupId']
+            # Add HTTP ingress rule (port 80 incoming traffic)
+            ec2_client.authorize_security_group_ingress(
+                GroupId=sg_id,
+                IpPermissions=[{
+                    'IpProtocol': 'tcp',
+                    'FromPort': 80,
+                    'ToPort': 80,
+                    'IpRanges': [{'CidrIp': '0.0.0.0/0'}]
+                }]
+            )
+            # Note: AWS automatically allows all outbound traffic by default
+            print(f"Created {name}: {sg_id}")
+            return sg_id
+        except botocore.exceptions.ClientError as e:
+            if e.response['Error']['Code'] == 'InvalidGroup.Duplicate':
+                sgs = ec2_client.describe_security_groups(
+                    Filters=[{'Name': 'group-name', 'Values': [name]}]
+                )
+                sg_id = sgs['SecurityGroups'][0]['GroupId']
+                print(f"Using existing {name}: {sg_id}")
+                return sg_id
             raise e
     
-    # Create security group for Web Service
-    ws_sg_name = 'WSSecGroup'
-    try:
-        # Try to create the security group
-        ws_sg_response = ec2_client.create_security_group(
-            GroupName=ws_sg_name,
-            Description='Security group for Web Service instances',
-            VpcId=vpc_id,
-            TagSpecifications=[
-                {
-                    'ResourceType': 'security-group',
-                    'Tags': TAGS
-                }
-            ]
-        )
-        sg2_id = ws_sg_response['GroupId']
-        print(f"Created Web Service security group: {sg2_id}")
-        
-        # Add ingress rules for Web Service security group
-        ec2_client.authorize_security_group_ingress(
-            GroupId=sg2_id,
-            IpPermissions=sg_permissions
-        )
-        print(f"Added HTTP ingress rule to Web Service security group")
-        
-    except botocore.exceptions.ClientError as e:
-        if e.response['Error']['Code'] == 'InvalidGroup.Duplicate':
-            # Security group already exists, get its ID
-            sgs = ec2_client.describe_security_groups(
-                Filters=[
-                    {'Name': 'group-name', 'Values': [ws_sg_name]},
-                    {'Name': 'vpc-id', 'Values': [vpc_id]}
-                ]
-            )
-            sg2_id = sgs['SecurityGroups'][0]['GroupId']
-            print(f"Using existing Web Service security group: {sg2_id}")
-        else:
-            raise e
+    sg1_id = create_security_group('LGSecGroup', 'Load Generator security group')
+    sg2_id = create_security_group('WSSecGroup', 'Web Service security group')
 
     print_section('2 - create LG')
 
