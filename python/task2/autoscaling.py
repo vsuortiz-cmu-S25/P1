@@ -249,9 +249,16 @@ def destroy_resources():
             except Exception as e:
                 print(f"Error deleting ASG: {e}")
         
-        # 3. Delete Load Balancer
+        # 3. Delete Load Balancer and its listeners
         if resources['lb_arn']:
             try:
+                # First delete all listeners
+                listeners = elb_client.describe_listeners(LoadBalancerArn=resources['lb_arn'])
+                for listener in listeners['Listeners']:
+                    elb_client.delete_listener(ListenerArn=listener['ListenerArn'])
+                    print(f"Deleted listener")
+                
+                # Then delete the load balancer
                 elb_client.delete_load_balancer(LoadBalancerArn=resources['lb_arn'])
                 print(f"Deleted Load Balancer")
                 
@@ -265,6 +272,7 @@ def destroy_resources():
         # 4. Delete Target Group
         if resources['tg_arn']:
             try:
+                time.sleep(5)  # Brief wait after LB deletion
                 elb_client.delete_target_group(TargetGroupArn=resources['tg_arn'])
                 print(f"Deleted Target Group")
             except Exception as e:
@@ -290,22 +298,34 @@ def destroy_resources():
             except Exception as e:
                 print(f"Error terminating Load Generator: {e}")
         
-        # 7. Delete Security Groups
-        time.sleep(10)  # Give some time for network interfaces to detach
+        # 7. Delete Security Groups (with retry logic)
+        print("Waiting for network interfaces to detach...")
+        time.sleep(30)  # Initial wait for network interfaces to detach
+        
+        # Function to delete security group with retries
+        def delete_sg_with_retry(sg_id, sg_name, max_retries=3):
+            for attempt in range(max_retries):
+                try:
+                    ec2_client.delete_security_group(GroupId=sg_id)
+                    print(f"Deleted {sg_name}: {sg_id}")
+                    return True
+                except botocore.exceptions.ClientError as e:
+                    if e.response['Error']['Code'] == 'DependencyViolation':
+                        if attempt < max_retries - 1:
+                            print(f"  {sg_name} still has dependencies, retrying in 20 seconds...")
+                            time.sleep(20)
+                        else:
+                            print(f"  Failed to delete {sg_name} after {max_retries} attempts: {e}")
+                    else:
+                        print(f"  Error deleting {sg_name}: {e}")
+                        return False
+            return False
         
         if resources['sg1_id']:
-            try:
-                ec2_client.delete_security_group(GroupId=resources['sg1_id'])
-                print(f"Deleted Security Group 1: {resources['sg1_id']}")
-            except Exception as e:
-                print(f"Error deleting Security Group 1: {e}")
+            delete_sg_with_retry(resources['sg1_id'], "Security Group 1")
         
         if resources['sg2_id']:
-            try:
-                ec2_client.delete_security_group(GroupId=resources['sg2_id'])
-                print(f"Deleted Security Group 2: {resources['sg2_id']}")
-            except Exception as e:
-                print(f"Error deleting Security Group 2: {e}")
+            delete_sg_with_retry(resources['sg2_id'], "Security Group 2")
         
         print("Resource cleanup completed")
         
