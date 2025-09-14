@@ -333,26 +333,6 @@ def destroy_resources():
         print(f"  Non-LB security group (Load Generator): {resources['sg1_id']}")
         print(f"  LB-associated security group (ASG/ELB): {resources['sg2_id']}")
         
-        # Function to delete security group with retries
-        def delete_sg_with_retry(sg_id, sg_name, max_retries=5):
-            for attempt in range(max_retries):
-                try:
-                    ec2_client.delete_security_group(GroupId=sg_id)
-                    print(f"  Deleted {sg_name}: {sg_id}")
-                    return True
-                except botocore.exceptions.ClientError as e:
-                    if e.response['Error']['Code'] == 'DependencyViolation':
-                        if attempt < max_retries - 1:
-                            print(f"    {sg_name} still has dependencies, retrying in 20 seconds...")
-                            time.sleep(20)
-                        else:
-                            print(f"    Failed to delete {sg_name} after {max_retries} attempts: {e}")
-                    else:
-                        print(f"    Error deleting {sg_name}: {e}")
-                        return False
-            return False
-        
-        
         # Wait a bit for resources to fully clean up
         print("Waiting for network interfaces to detach...")
         time.sleep(30)
@@ -360,12 +340,20 @@ def destroy_resources():
         # Step 11: Delete non-LB security group first (sg1 - Load Generator)
         if resources['sg1_id']:
             print("Step 11: Deleting non-LB security group (Load Generator)...")
-            delete_sg_with_retry(resources['sg1_id'], "Load Generator Security Group")
+            try:
+                ec2_client.delete_security_group(GroupId=resources['sg1_id'])
+                print(f"  Deleted Load Generator Security Group: {resources['sg1_id']}")
+            except botocore.exceptions.ClientError as e:
+                print(f"  Error deleting Load Generator Security Group: {e}")
         
         # Step 12: Delete LB-associated security group last (sg2 - ASG/ELB)
         if resources['sg2_id']:
             print("Step 13: Deleting LB-associated security group (ASG/ELB)...")
-            delete_sg_with_retry(resources['sg2_id'], "ASG/ELB Security Group")
+            try:
+                ec2_client.delete_security_group(GroupId=resources['sg2_id'])
+                print(f"  Deleted ASG/ELB Security Group: {resources['sg2_id']}")
+            except botocore.exceptions.ClientError as e:
+                print(f"  Error deleting ASG/ELB Security Group: {e}")
         
         print("\nResource cleanup completed successfully!")
         
