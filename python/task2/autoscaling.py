@@ -210,127 +210,214 @@ def destroy_resources():
     cw_client = boto3.client('cloudwatch', region_name='us-east-1')
     
     try:
-        # 1. Delete CloudWatch alarms
+        # Step 1: Delete CloudWatch alarms
+        print("Step 1: Deleting CloudWatch alarms...")
         if resources['scale_out_alarm_name']:
             try:
                 cw_client.delete_alarms(AlarmNames=[resources['scale_out_alarm_name']])
-                print(f"Deleted CloudWatch alarm: {resources['scale_out_alarm_name']}")
+                print(f"  Deleted CloudWatch alarm: {resources['scale_out_alarm_name']}")
             except Exception as e:
-                print(f"Error deleting scale out alarm: {e}")
+                print(f"  Error deleting scale out alarm: {e}")
         
         if resources['scale_in_alarm_name']:
             try:
                 cw_client.delete_alarms(AlarmNames=[resources['scale_in_alarm_name']])
-                print(f"Deleted CloudWatch alarm: {resources['scale_in_alarm_name']}")
+                print(f"  Deleted CloudWatch alarm: {resources['scale_in_alarm_name']}")
             except Exception as e:
-                print(f"Error deleting scale in alarm: {e}")
+                print(f"  Error deleting scale in alarm: {e}")
         
-        # 2. Delete Auto Scaling Group (this will terminate all ASG instances)
+        # Step 2: Update ASG to 0 instances and wait for termination
         if resources['asg_name']:
+            print("Step 2: Updating ASG to 0 instances...")
             try:
-                # Force delete ASG with all instances
+                # Update ASG to have 0 instances
                 asg_client.update_auto_scaling_group(
                     AutoScalingGroupName=resources['asg_name'],
                     MinSize=0,
                     MaxSize=0,
                     DesiredCapacity=0
                 )
-                time.sleep(5)
                 
+                # Step 3: Delete ASG
+                print("Step 3: Deleting Auto Scaling Group...")
                 asg_client.delete_auto_scaling_group(
                     AutoScalingGroupName=resources['asg_name'],
                     ForceDelete=True
                 )
-                print(f"Deleted Auto Scaling Group: {resources['asg_name']}")
+                print(f"  Deleted Auto Scaling Group: {resources['asg_name']}")
                 
-                # Wait for instances to terminate
-                print("Waiting for ASG instances to terminate...")
-                time.sleep(30)
             except Exception as e:
-                print(f"Error deleting ASG: {e}")
+                print(f"  Error with ASG operations: {e}")
         
-        # 3. Delete Load Balancer and its listeners
+        # Step 4: Delete Load Balancer listeners
         if resources['lb_arn']:
+            print("Step 4: Deleting Load Balancer listeners...")
             try:
-                # First delete all listeners
                 listeners = elb_client.describe_listeners(LoadBalancerArn=resources['lb_arn'])
                 for listener in listeners['Listeners']:
                     elb_client.delete_listener(ListenerArn=listener['ListenerArn'])
-                    print(f"Deleted listener")
-                
-                # Then delete the load balancer
-                elb_client.delete_load_balancer(LoadBalancerArn=resources['lb_arn'])
-                print(f"Deleted Load Balancer")
-                
-                # Wait for Load Balancer to be deleted
-                print("Waiting for Load Balancer to be deleted...")
-                waiter = elb_client.get_waiter('load_balancers_deleted')
-                waiter.wait(LoadBalancerArns=[resources['lb_arn']])
+                    print(f"  Deleted listener: {listener['ListenerArn']}")
             except Exception as e:
-                print(f"Error deleting Load Balancer: {e}")
-        
-        # 4. Delete Target Group
-        if resources['tg_arn']:
+                print(f"  Error deleting listeners: {e}")
+            
+            # Step 5: Delete Load Balancer and wait for full deletion
+            print("Step 5: Deleting Load Balancer...")
             try:
-                time.sleep(5)  # Brief wait after LB deletion
-                elb_client.delete_target_group(TargetGroupArn=resources['tg_arn'])
-                print(f"Deleted Target Group")
+                elb_client.delete_load_balancer(LoadBalancerArn=resources['lb_arn'])
+                print(f"  Initiated deletion of Load Balancer")
+                
+                # Wait for Load Balancer to be fully deleted
+                print("  Waiting for Load Balancer to be fully deleted...")
+                waiter = elb_client.get_waiter('load_balancers_deleted')
+                waiter.wait(
+                    LoadBalancerArns=[resources['lb_arn']],
+                    WaiterConfig={'Delay': 15, 'MaxAttempts': 40}
+                )
+                print("  Load Balancer fully deleted")
             except Exception as e:
-                print(f"Error deleting Target Group: {e}")
+                print(f"  Error deleting Load Balancer: {e}")
         
-        # 5. Delete Launch Template
+        # Step 6: Wait for Target Group targets to deregister
+        if resources['tg_arn']:
+            print("Step 6: Waiting for Target Group targets to deregister...")
+            try:
+                max_wait_time = 120  # 2 minutes
+                start_time = time.time()
+                
+                while time.time() - start_time < max_wait_time:
+                    response = elb_client.describe_target_health(TargetGroupArn=resources['tg_arn'])
+                    targets = response.get('TargetHealthDescriptions', [])
+                    if not targets:
+                        print("  All targets deregistered")
+                        break
+                    print(f"    Still waiting... {len(targets)} targets remaining")
+                    time.sleep(10)
+                else:
+                    print("  Warning: Timeout waiting for targets to deregister")
+                
+                # Step 7: Delete Target Group
+                print("Step 7: Deleting Target Group...")
+                elb_client.delete_target_group(TargetGroupArn=resources['tg_arn'])
+                print(f"  Deleted Target Group")
+            except Exception as e:
+                print(f"  Error with Target Group operations: {e}")
+        
+        # Step 8: Delete Launch Template
         if resources['lt_id']:
+            print("Step 8: Deleting Launch Template...")
             try:
                 ec2_client.delete_launch_template(LaunchTemplateId=resources['lt_id'])
-                print(f"Deleted Launch Template: {resources['lt_name']}")
+                print(f"  Deleted Launch Template: {resources['lt_name']}")
             except Exception as e:
-                print(f"Error deleting Launch Template: {e}")
+                print(f"  Error deleting Launch Template: {e}")
         
-        # 6. Terminate Load Generator instance
+        # Step 9: Terminate Load Generator
         if resources['lg_instance_id']:
+            print("Step 9: Terminating Load Generator instance...")
             try:
                 ec2_client.terminate_instances(InstanceIds=[resources['lg_instance_id']])
-                print(f"Terminated Load Generator: {resources['lg_instance_id']}")
+                print(f"  Initiated termination of Load Generator: {resources['lg_instance_id']}")
                 
                 # Wait for instance to terminate
                 waiter = ec2_client.get_waiter('instance_terminated')
-                waiter.wait(InstanceIds=[resources['lg_instance_id']])
+                waiter.wait(
+                    InstanceIds=[resources['lg_instance_id']],
+                    WaiterConfig={'Delay': 15, 'MaxAttempts': 40}
+                )
+                print("  Load Generator terminated")
             except Exception as e:
-                print(f"Error terminating Load Generator: {e}")
+                print(f"  Error terminating Load Generator: {e}")
         
-        # 7. Delete Security Groups (with retry logic)
-        print("Waiting for network interfaces to detach...")
-        time.sleep(30)  # Initial wait for network interfaces to detach
+        # Step 10: Identify which security group is LB-associated
+        print("Step 10: Identifying security groups...")
+        # sg1_id is for Load Generator (non-LB)
+        # sg2_id is for ASG and ELB (LB-associated)
+        print(f"  Non-LB security group (Load Generator): {resources['sg1_id']}")
+        print(f"  LB-associated security group (ASG/ELB): {resources['sg2_id']}")
         
         # Function to delete security group with retries
-        def delete_sg_with_retry(sg_id, sg_name, max_retries=3):
+        def delete_sg_with_retry(sg_id, sg_name, max_retries=5):
             for attempt in range(max_retries):
                 try:
                     ec2_client.delete_security_group(GroupId=sg_id)
-                    print(f"Deleted {sg_name}: {sg_id}")
+                    print(f"  Deleted {sg_name}: {sg_id}")
                     return True
                 except botocore.exceptions.ClientError as e:
                     if e.response['Error']['Code'] == 'DependencyViolation':
                         if attempt < max_retries - 1:
-                            print(f"  {sg_name} still has dependencies, retrying in 20 seconds...")
+                            print(f"    {sg_name} still has dependencies, retrying in 20 seconds...")
                             time.sleep(20)
                         else:
-                            print(f"  Failed to delete {sg_name} after {max_retries} attempts: {e}")
+                            print(f"    Failed to delete {sg_name} after {max_retries} attempts: {e}")
                     else:
-                        print(f"  Error deleting {sg_name}: {e}")
+                        print(f"    Error deleting {sg_name}: {e}")
                         return False
             return False
         
+        # Function to check and clean up ENIs
+        def cleanup_enis(sg_id):
+            try:
+                # Find ENIs associated with the security group
+                enis = ec2_client.describe_network_interfaces(
+                    Filters=[{'Name': 'group-id', 'Values': [sg_id]}]
+                )
+                
+                for eni in enis['NetworkInterfaces']:
+                    eni_id = eni['NetworkInterfaceId']
+                    status = eni['Status']
+                    
+                    if status == 'available':
+                        # Delete unattached ENI
+                        try:
+                            ec2_client.delete_network_interface(NetworkInterfaceId=eni_id)
+                            print(f"    Deleted unattached ENI: {eni_id}")
+                        except Exception as e:
+                            print(f"    Error deleting ENI {eni_id}: {e}")
+                    elif status == 'in-use':
+                        # Try to detach if it's attached
+                        attachment = eni.get('Attachment')
+                        if attachment and not attachment.get('DeleteOnTermination'):
+                            try:
+                                ec2_client.detach_network_interface(
+                                    AttachmentId=attachment['AttachmentId'],
+                                    Force=True
+                                )
+                                print(f"    Detached ENI: {eni_id}")
+                                time.sleep(5)
+                                # Try to delete after detaching
+                                ec2_client.delete_network_interface(NetworkInterfaceId=eni_id)
+                                print(f"    Deleted ENI: {eni_id}")
+                            except Exception as e:
+                                print(f"    Error detaching/deleting ENI {eni_id}: {e}")
+            except Exception as e:
+                print(f"    Error checking ENIs: {e}")
+        
+        # Wait a bit for resources to fully clean up
+        print("Waiting for network interfaces to detach...")
+        time.sleep(30)
+        
+        # Step 11: Delete non-LB security group first (sg1 - Load Generator)
         if resources['sg1_id']:
-            delete_sg_with_retry(resources['sg1_id'], "Security Group 1")
+            print("Step 11: Deleting non-LB security group (Load Generator)...")
+            delete_sg_with_retry(resources['sg1_id'], "Load Generator Security Group")
         
+        # Step 12: Check for and clean up any remaining ENIs
         if resources['sg2_id']:
-            delete_sg_with_retry(resources['sg2_id'], "Security Group 2")
+            print("Step 12: Checking for remaining ENIs...")
+            cleanup_enis(resources['sg2_id'])
+            time.sleep(10)  # Brief wait after ENI cleanup
         
-        print("Resource cleanup completed")
+        # Step 13: Delete LB-associated security group last (sg2 - ASG/ELB)
+        if resources['sg2_id']:
+            print("Step 13: Deleting LB-associated security group (ASG/ELB)...")
+            delete_sg_with_retry(resources['sg2_id'], "ASG/ELB Security Group")
+        
+        print("\nResource cleanup completed successfully!")
         
     except Exception as e:
-        print(f"Error during resource cleanup: {e}")
+        print(f"Unexpected error during resource cleanup: {e}")
+        import traceback
+        traceback.print_exc()
 
 
 def print_section(msg):
