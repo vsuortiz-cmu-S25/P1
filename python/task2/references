@@ -1,18 +1,17 @@
-{  
-    "referenceGuide" : "Cite all the reference sources in the required format. Proper citations will help you avoid unnecessary trouble. Read JSON grammar from Internet if needed.",
-    "websites":[  
-        {  
-            "title":"<title of the page>",
-            "url":"<url>",
-            "code":"<in which code you use the snippet or the idea>",
-            "description":"<additional information you find it necessary to provide>"
-        }
-    ],
-    "collaborators":[
-        {
-            "submissionUsername":"<collaborator submissionUsername>",
-            "collaborationType":"<I helped X, X helped me, or we helped each other>",
-            "description":"<describe the idea you shared>"
-        }
-    ]
-}
+# References for Task 2 - AWS Auto Scaling Implementation
+
+## AWS Documentation
+- AWS Auto Scaling Documentation: https://docs.aws.amazon.com/autoscaling/
+- Elastic Load Balancing Documentation: https://docs.aws.amazon.com/elasticloadbalancing/
+- CloudWatch Documentation: https://docs.aws.amazon.com/cloudwatch/
+- EC2 Auto Scaling User Guide: https://docs.aws.amazon.com/autoscaling/ec2/userguide/
+
+## Boto3 Documentation
+- Boto3 EC2 Client: https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/ec2.html
+- Boto3 ELBv2 Client: https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/elbv2.html
+- Boto3 Auto Scaling Client: https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/autoscaling.html
+- Boto3 CloudWatch Client: https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/cloudwatch.html
+
+## Course Materials
+- Project instructions and requirements
+- Task 1 horizontal scaling implementation as reference
