@@ -8,7 +8,7 @@
   "cool_down_period_scale_in": 60,
   "cool_down_period_scale_out": 60,
   "scale_out_adjustment": 1,
-  "scale_in_adjustment": -1,
+  "scale_in_adjustment": -3,
   "asg_default_cool_down_period": 60,
   "alarm_period": 60,
   "cpu_lower_threshold": 55,

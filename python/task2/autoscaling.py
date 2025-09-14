@@ -281,7 +281,7 @@ def destroy_resources():
         if resources['tg_arn']:
             print("Step 6: Waiting for Target Group targets to deregister...")
             try:
-                max_wait_time = 120  # 2 minutes
+                max_wait_time = 200 
                 start_time = time.time()
                 
                 while time.time() - start_time < max_wait_time:
@@ -335,7 +335,7 @@ def destroy_resources():
         
         # Wait a bit for resources to fully clean up
         print("Waiting for network interfaces to detach...")
-        time.sleep(30)
+        time.sleep(100)
         
         # Step 11: Delete non-LB security group first (sg1 - Load Generator)
         if resources['sg1_id']:
