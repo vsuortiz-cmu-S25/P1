@@ -328,8 +328,6 @@ def destroy_resources():
             except Exception as e:
                 print(f"  Error terminating Load Generator: {e}")
         
-        # Step 10: Identify which security group is LB-associated
-        print("Step 10: Identifying security groups...")
         # sg1_id is for Load Generator (non-LB)
         # sg2_id is for ASG and ELB (LB-associated)
         print(f"  Non-LB security group (Load Generator): {resources['sg1_id']}")
@@ -354,43 +352,6 @@ def destroy_resources():
                         return False
             return False
         
-        # Function to check and clean up ENIs
-        def cleanup_enis(sg_id):
-            try:
-                # Find ENIs associated with the security group
-                enis = ec2_client.describe_network_interfaces(
-                    Filters=[{'Name': 'group-id', 'Values': [sg_id]}]
-                )
-                
-                for eni in enis['NetworkInterfaces']:
-                    eni_id = eni['NetworkInterfaceId']
-                    status = eni['Status']
-                    
-                    if status == 'available':
-                        # Delete unattached ENI
-                        try:
-                            ec2_client.delete_network_interface(NetworkInterfaceId=eni_id)
-                            print(f"    Deleted unattached ENI: {eni_id}")
-                        except Exception as e:
-                            print(f"    Error deleting ENI {eni_id}: {e}")
-                    elif status == 'in-use':
-                        # Try to detach if it's attached
-                        attachment = eni.get('Attachment')
-                        if attachment and not attachment.get('DeleteOnTermination'):
-                            try:
-                                ec2_client.detach_network_interface(
-                                    AttachmentId=attachment['AttachmentId'],
-                                    Force=True
-                                )
-                                print(f"    Detached ENI: {eni_id}")
-                                time.sleep(5)
-                                # Try to delete after detaching
-                                ec2_client.delete_network_interface(NetworkInterfaceId=eni_id)
-                                print(f"    Deleted ENI: {eni_id}")
-                            except Exception as e:
-                                print(f"    Error detaching/deleting ENI {eni_id}: {e}")
-            except Exception as e:
-                print(f"    Error checking ENIs: {e}")
         
         # Wait a bit for resources to fully clean up
         print("Waiting for network interfaces to detach...")
@@ -401,13 +362,7 @@ def destroy_resources():
             print("Step 11: Deleting non-LB security group (Load Generator)...")
             delete_sg_with_retry(resources['sg1_id'], "Load Generator Security Group")
         
-        # Step 12: Check for and clean up any remaining ENIs
-        if resources['sg2_id']:
-            print("Step 12: Checking for remaining ENIs...")
-            cleanup_enis(resources['sg2_id'])
-            time.sleep(10)  # Brief wait after ENI cleanup
-        
-        # Step 13: Delete LB-associated security group last (sg2 - ASG/ELB)
+        # Step 12: Delete LB-associated security group last (sg2 - ASG/ELB)
         if resources['sg2_id']:
             print("Step 13: Deleting LB-associated security group (ASG/ELB)...")
             delete_sg_with_retry(resources['sg2_id'], "ASG/ELB Security Group")
