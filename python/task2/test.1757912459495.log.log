@@ -1,0 +1,8 @@
+; 2025-09-15T05:00:59+00:00
+; Warmup Test
+; Test launched. Please check every minute for update, for 15 minutes
+[Test]
+type=warmup
+testId=1757912459495
+testFile=test.1757912459495.log
+
