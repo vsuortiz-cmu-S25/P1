@@ -2,17 +2,77 @@
     "referenceGuide" : "Cite all the reference sources in the required format. Proper citations will help you avoid unnecessary trouble. Read JSON grammar from Internet if needed.",
     "websites":[  
         {  
-            "title":"<title of the page>",
-            "url":"<url>",
-            "code":"<in which code you use the snippet or the idea>",
-            "description":"<additional information you find it necessary to provide>"
+            "title":"AWS Provider - Terraform Registry",
+            "url":"https://registry.terraform.io/providers/hashicorp/aws/latest/docs",
+            "code":"task3-terraform.tf",
+            "description":"Main provider documentation for AWS resources in Terraform"
+        },
+        {
+            "title":"aws_autoscaling_group - Terraform Registry",
+            "url":"https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/autoscaling_group",
+            "code":"task3-terraform.tf",
+            "description":"Documentation for creating and configuring Auto Scaling Groups"
+        },
+        {
+            "title":"aws_launch_template - Terraform Registry",
+            "url":"https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/launch_template",
+            "code":"task3-terraform.tf",
+            "description":"Reference for Launch Template configuration with monitoring and tags"
+        },
+        {
+            "title":"aws_lb - Terraform Registry",
+            "url":"https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lb",
+            "code":"task3-terraform.tf",
+            "description":"Application Load Balancer resource configuration"
+        },
+        {
+            "title":"aws_lb_target_group - Terraform Registry",
+            "url":"https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lb_target_group",
+            "code":"task3-terraform.tf",
+            "description":"Target Group configuration with health check settings"
+        },
+        {
+            "title":"aws_lb_listener - Terraform Registry",
+            "url":"https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lb_listener",
+            "code":"task3-terraform.tf",
+            "description":"Load Balancer Listener configuration for HTTP traffic forwarding"
+        },
+        {
+            "title":"aws_autoscaling_policy - Terraform Registry",
+            "url":"https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/autoscaling_policy",
+            "code":"task3-terraform.tf",
+            "description":"Simple scaling policy configuration for scale in and scale out"
+        },
+        {
+            "title":"aws_cloudwatch_metric_alarm - Terraform Registry",
+            "url":"https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudwatch_metric_alarm",
+            "code":"task3-terraform.tf",
+            "description":"CloudWatch alarms for CPU utilization monitoring and triggering scaling policies"
+        },
+        {
+            "title":"aws_security_group - Terraform Registry",
+            "url":"https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/security_group",
+            "code":"task3-terraform.tf",
+            "description":"Security group configuration for Load Generator and ELB/ASG"
+        },
+        {
+            "title":"aws_instance - Terraform Registry",
+            "url":"https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/instance",
+            "code":"task3-terraform.tf",
+            "description":"EC2 instance resource for Load Generator"
+        },
+        {
+            "title":"aws_default_vpc - Terraform Registry",
+            "url":"https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/default_vpc",
+            "code":"task3-terraform.tf",
+            "description":"Default VPC resource management"
+        },
+        {
+            "title":"aws_default_subnet - Terraform Registry",
+            "url":"https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/default_subnet",
+            "code":"task3-terraform.tf",
+            "description":"Default subnet resource for availability zones"
         }
     ],
-    "collaborators":[
-        {
-            "submissionUsername":"<collaborator submissionUsername>",
-            "collaborationType":"<I helped X, X helped me, or we helped each other>",
-            "description":"<describe the idea you shared>"
-        }
-    ]
+    "collaborators":[]
 }
