@@ -1,0 +1,114 @@
+; MSB AutoScaling Test
+
+; Test launched. Please check every minute for update.
+[Test Start]
+time=2025-09-15 03:37:05
+type=autoscaling
+testId=1757907425604
+testFile=test.1757907425604.log
+
+
+[Minute 1]
+rps=19.97
+
+[Minute 2]
+rps=20.00
+
+[Minute 3]
+rps=4.02
+
+[Minute 4]
+rps=4.02
+
+[Minute 5]
+rps=4.02
+
+[Minute 6]
+rps=12.02
+
+[Minute 7]
+rps=20.02
+
+[Minute 8]
+rps=13.12
+
+[Minute 9]
+rps=10.47
+
+[Minute 10]
+rps=20.02
+
+[Minute 11]
+rps=16.75
+
+[Minute 12]
+rps=11.58
+
+[Minute 13]
+rps=4.02
+
+[Minute 14]
+rps=4.02
+
+[Minute 15]
+rps=4.02
+
+[Minute 16]
+rps=16.92
+
+[Minute 17]
+rps=13.15
+
+[Minute 18]
+rps=19.22
+
+[Minute 19]
+rps=26.38
+
+[Minute 20]
+rps=19.53
+
+[Minute 21]
+rps=37.48
+
+[Minute 22]
+rps=27.33
+
+[Minute 23]
+rps=4.02
+
+[Minute 24]
+rps=3.38
+
+[Load Generator]
+username=null
+platform=AWS
+instanceId=i-0c21158389921d5f4
+instanceType=m5.large
+hostname=ec2-3-86-2-172.compute-1.amazonaws.com
+
+[Elastic Load Balancer]
+dns=autoscaling-lb-1657013464.us-east-1.elb.amazonaws.com
+
+[Test End]
+time=2025-09-15 04:02:00
+averageRps=14.00
+maxRps=37.48
+pattern=110
+ih=202.27
+; Instance-Hour Usage
+; i-018b0b8e0ed5d3329	m5.large	8.47	2025-09-15 03:49:03	2025-09-15 03:51:10
+; i-06c0ada79c281c698	m5.large	10.40	2025-09-15 03:56:48	2025-09-15 03:59:24
+; i-074492452df890785	m5.large	16.60	2025-09-15 03:56:48	2025-09-15 04:00:57
+; i-07b9badc39d23affd	m5.large	19.13	2025-09-15 03:37:05	2025-09-15 03:41:52
+; i-07d9af7d2a0afe593	m5.large	23.47	2025-09-15 03:37:05	2025-09-15 03:42:57
+; i-09242e03915c56074	m5.large	8.33	2025-09-15 03:54:49	2025-09-15 03:56:54
+; i-09d2d68f1afab0ab6	m5.large	23.47	2025-09-15 03:49:13	2025-09-15 03:55:05
+; i-0a93481e810f657c3	m5.large	29.53	2025-09-15 03:39:54	2025-09-15 03:47:17
+; i-0bf2047de3c0c5f64	m5.large	16.73	2025-09-15 03:45:50	2025-09-15 03:50:01
+; i-0e2c34b2075d5bd6e	m5.large	16.67	2025-09-15 03:37:05	2025-09-15 03:41:15
+; i-0e5effc8a23aa03a9	m5.large	16.93	2025-09-15 03:39:46	2025-09-15 03:44:00
+; i-0f895d52d79f5939e	m5.large	12.53	2025-09-15 03:54:49	2025-09-15 03:57:57
+
+; MSB is validating ......
+[Test finished]
