@@ -1,0 +1,116 @@
+; MSB AutoScaling Test
+
+; Test launched. Please check every minute for update.
+[Test Start]
+time=2025-09-15 05:13:01
+type=autoscaling
+testId=1757913180876
+testFile=test.1757913180876.log
+
+
+[Minute 1]
+rps=20.00
+
+[Minute 2]
+rps=20.02
+
+[Minute 3]
+rps=4.00
+
+[Minute 4]
+rps=4.00
+
+[Minute 5]
+rps=4.02
+
+[Minute 6]
+rps=11.75
+
+[Minute 7]
+rps=13.57
+
+[Minute 8]
+rps=14.80
+
+[Minute 9]
+rps=12.02
+
+[Minute 10]
+rps=15.45
+
+[Minute 11]
+rps=15.63
+
+[Minute 12]
+rps=11.55
+
+[Minute 13]
+rps=4.02
+
+[Minute 14]
+rps=4.02
+
+[Minute 15]
+rps=4.02
+
+[Minute 16]
+rps=14.47
+
+[Minute 17]
+rps=12.30
+
+[Minute 18]
+rps=13.17
+
+[Minute 19]
+rps=17.82
+
+[Minute 20]
+rps=17.35
+
+[Minute 21]
+rps=41.65
+
+[Minute 22]
+rps=44.58
+
+[Minute 23]
+rps=4.02
+
+[Minute 24]
+rps=3.35
+
+[Load Generator]
+username=null
+platform=AWS
+instanceId=i-00483b217efb50e93
+instanceType=m5.large
+hostname=ec2-52-205-42-182.compute-1.amazonaws.com
+
+[Elastic Load Balancer]
+dns=autoscaling-lb-644267447.us-east-1.elb.amazonaws.com
+
+[Test End]
+time=2025-09-15 05:37:55
+averageRps=13.68
+maxRps=44.58
+pattern=746
+ih=190.47
+; Instance-Hour Usage
+; i-00464113def6647ed	m5.large	10.67	2025-09-15 05:34:16	2025-09-15 05:36:56
+; i-01e751377e5fa70d2	m5.large	6.33	2025-09-15 05:13:01	2025-09-15 05:14:36
+; i-023057330fcb6ac9b	m5.large	12.80	2025-09-15 05:33:25	2025-09-15 05:36:37
+; i-02bfb647b6633af42	m5.large	16.93	2025-09-15 05:32:35	2025-09-15 05:36:49
+; i-03263fe3424755aec	m5.large	4.33	2025-09-15 05:35:47	2025-09-15 05:36:52
+; i-0498bc716017e6252	m5.large	27.13	2025-09-15 05:27:15	2025-09-15 05:34:02
+; i-050cb2180f8f1e5dc	m5.large	16.73	2025-09-15 05:22:54	2025-09-15 05:27:05
+; i-0773de89459c2768e	m5.large	14.73	2025-09-15 05:13:03	2025-09-15 05:16:44
+; i-08788890b2baac695	m5.large	9.00	2025-09-15 05:20:34	2025-09-15 05:22:49
+; i-0a0b691bc31e885bb	m5.large	12.80	2025-09-15 05:13:01	2025-09-15 05:16:13
+; i-0b140c124e8af1644	m5.large	16.93	2025-09-15 05:31:34	2025-09-15 05:35:48
+; i-0bb18b482b15d8687	m5.large	6.33	2025-09-15 05:26:24	2025-09-15 05:27:59
+; i-0ca18617c15d20422	m5.large	25.20	2025-09-15 05:14:53	2025-09-15 05:21:11
+; i-0f15336ac00330d24	m5.large	10.53	2025-09-15 05:13:01	2025-09-15 05:15:39
+
+; MSB is validating ......
+[Test finished]

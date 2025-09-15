@@ -6,3 +6,59 @@ type=warmup
 testId=1757912459495
 testFile=test.1757912459495.log
 
+[Minute 1]
+rps=12.89
+
+[Minute 2]
+rps=0
+
+[Minute 3]
+rps=0
+
+[Minute 4]
+rps=0
+
+[Minute 5]
+rps=26.67
+
+[Minute 6]
+rps=22.67
+
+[Minute 7]
+rps=33.93
+
+[Minute 8]
+rps=24.99
+
+[Minute 9]
+rps=0
+
+[Minute 10]
+rps=58.81
+
+[Minute 11]
+rps=23.88
+
+[Minute 12]
+rps=18.56
+
+[Minute 13]
+rps=0
+
+[Minute 14]
+rps=34.82
+
+[Minute 15]
+rps=0
+
+[Load Generator]
+username=null
+platform=AWS
+instanceId=i-00483b217efb50e93
+instanceType=m5.large
+hostname=ec2-52-205-42-182.compute-1.amazonaws.com
+
+[Elastic Load Balancer]
+dns=autoscaling-lb-644267447.us-east-1.elb.amazonaws.com
+
+[Test finished]
